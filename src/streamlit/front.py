@@ -1,6 +1,7 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from mongoengine import connect
+from dotenv import load_dotenv
 
 import os
 import sys
@@ -9,6 +10,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(os.path.abspath(os.path.join(current_dir, os.pardir)))
 
 sys.path.append(parent_dir)
+
+load_dotenv()
 
 from src.assistants.interaction import Assistant
 
