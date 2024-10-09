@@ -18,7 +18,7 @@ from src.assistants.interaction import Assistant
 
 db = os.getenv('CONNECTA_DB_NAME')
 host = os.getenv('CONNECTA_MONGO_URI')
-print("db",db)
+
 connect(db=db, host=host)
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0,

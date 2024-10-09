@@ -17,6 +17,8 @@ class RAGSegment(Document):
     source_type = StringField()
     embedding = ListField(FloatField(), required=False)
 
+
+    #trocar nome da collection
     meta = {
         "collection": "connecta_rag",
     }
@@ -27,7 +29,7 @@ class RAGSegment(Document):
             "context":self.context,
             "text":self.text,
             "source":self.source_type
-        }
+        }   
     
     @classmethod
     def create_vector_index(cls):
