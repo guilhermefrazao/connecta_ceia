@@ -13,7 +13,7 @@ import os
 class RAGSegment(Document):
     id = ObjectIdField(primary_key=True, default=lambda: ObjectId())
     context = StringField()
-    text = ListField(DictField())
+    text = StringField()
     text_embedding = StringField()
     source_type = StringField()
     embedding = ListField(FloatField(), required=False)

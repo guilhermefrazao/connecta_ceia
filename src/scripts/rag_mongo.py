@@ -15,45 +15,38 @@ from src.utils.embeddings import generate_embeddings
 from src.models.rag import RAGSegment
 from src.utils.utils_csv import read_csv, line_to_str
 
-
-
 import time
-
-
-
-
 
 db = os.getenv('CONNECTA_DB_NAME')
 host = os.getenv('CONNECTA_MONGO_URI')
 connect(db=db, host=host)
 
-def embeddings(connecta, bolsistas):
-    segment_connecta = RAGSegment(
-        context="connecta ceia",
-        text = connecta,
-        text_embedding="fale sobre conecta ceia",
-        source_type="csv",
-        embedding=generate_embeddings("fale sobre bolsistas conecta ceia"),
-        instructions="Isso é um csv falando sobre o Centro de Excellencia em Inteligencia Artificial(CEIA)"
-    )
+segment_connecta = RAGSegment(
+    context="connecta ceia",
+    text = "\n".join([line_to_str(line) for line in read_csv('../data/conecta_ceia_info.csv')]),
+    text_embedding="fale sobre conecta ceia",
+    source_type="csv",
+    embedding=generate_embeddings("fale sobre conecta ceia"),
+    instructions="Isso é um csv falando sobre o Centro de Excellencia em Inteligencia Artificial(CEIA)"
+)
 
-    segment_bolsistas = RAGSegment(
-        context="connecta ceia",
-        text = bolsistas,
-        text_embedding="fale sobre bolsistas conecta ceia",
-        source_type="csv",
-        embedding=generate_embeddings("fale sobre bolsistas conecta ceia"),
-        instructions="isso é um csv falando sobre bolsistas do ceia, considerando suas posições dentro dos projetos que estão sendo desenvolvidos e o valor que recebem para desenvolver esses projetos"
-    )
+segment_bolsistas = RAGSegment(
+    context="connecta ceia",
+    text = "\n".join([line_to_str(line) for line in read_csv('../data/projetos_equipes_formatado.csv')]),
+    text_embedding="fale sobre bolsistas conecta ceia",
+    source_type="csv",
+    embedding=generate_embeddings("fale sobre bolsistas conecta ceia"),
+    instructions="isso é um csv falando sobre bolsistas do ceia, considerando suas posições dentro dos projetos que estão sendo desenvolvidos e o valor que recebem para desenvolver esses projetos"
+)
 
-    RAGSegment.drop_collection()
+RAGSegment.drop_collection()
 
-    print("Aguarde para que o index possa ser criado novamente...")
-    for i in range(30):
-        print(i)
-        time.sleep(1)
+print("Aguarde para que o index possa ser criado novamente...")
+for i in range(30):
+    print(i)
+    time.sleep(1)
 
-    segment_bolsistas.save()
-    segment_connecta.save()
-    RAGSegment.create_vector_index()
+segment_bolsistas.save()
+segment_connecta.save()
+RAGSegment.create_vector_index()
 

@@ -179,7 +179,7 @@ class Assistant:
                 text=message,
                 context="connecta ceia",
                 k=1
-            ) 
+            )
         else:
             context_docs = []
 

@@ -1,11 +1,8 @@
 from src.models.rag import RAGSegment
 from src.utils.embeddings import generate_embeddings
-from src.utils.utils_csv import tokenize_text
-from src.scripts.rag_mongo import embeddings
-from pymongo import MongoClient
 
 import os
-import pandas as pd
+#import pandas as pd
 
 def mongodb_vector_search(vector_index, text, context, k):
 
@@ -13,7 +10,6 @@ def mongodb_vector_search(vector_index, text, context, k):
     
     #Aqui está dando problemas de timeout devido a ausencia da collection
     num_candidates = RAGSegment.objects.count()
-
 
     pipeline = [
         {
@@ -34,7 +30,7 @@ def mongodb_vector_search(vector_index, text, context, k):
                 'context': 1,
                 'text': 1,
                 'text_embedding':1,
-
+                'instructions':1,
                 'score': {
                     '$meta': 'vectorSearchScore'
                 }
@@ -43,5 +39,4 @@ def mongodb_vector_search(vector_index, text, context, k):
         }
     ]
     result = RAGSegment.objects().aggregate(pipeline)
-    print("context_docs",list(result))
     return list(result)
