@@ -3,7 +3,8 @@ from mongoengine import (
     StringField,
     FloatField,
     ListField,
-    ObjectIdField
+    ObjectIdField,
+    DictField
 )
 
 from bson import ObjectId
@@ -12,10 +13,11 @@ import os
 class RAGSegment(Document):
     id = ObjectIdField(primary_key=True, default=lambda: ObjectId())
     context = StringField()
-    text = StringField()
+    text = ListField(DictField())
     text_embedding = StringField()
     source_type = StringField()
     embedding = ListField(FloatField(), required=False)
+    instructions = StringField()
 
 
     #trocar nome da collection

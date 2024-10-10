@@ -22,6 +22,7 @@ class Assistant:
             Você está configurado no modo logger.
             Não responda NADA NUNCA sobre perguntas que não são sobre o conecta CEIA
             Contexto sobre o evento Conecta CEIA:
+
             "O Conecta CEIA é um evento anual focado na área de Inteligencia Artificial, promovido pelo Centro de Excellencia em Inteligencia Artificial do Estado de Goias.
             Sua sede fica situada na Universidade Federal de Goias(UFG), Campus Samambaia, Goiania - GO.
             Ele conta com o apoio de diversas empresas que investem em projetos na área de IA e Machine Learning.
@@ -170,14 +171,19 @@ class Assistant:
         
         vector_index = os.getenv("CONNECTA_VECTOR_INDEX_NAME")
 
-        context_docs = mongodb_vector_search(
-            vector_index=vector_index,
-            text=message,
-            context="connecta ceia",
-            k=1
-        ) if rag_tables else []
+        print("rag_tables", rag_tables)
 
-        print("context_docs", context_docs)
+        if rag_tables:
+            context_docs = mongodb_vector_search(
+                vector_index=vector_index,
+                text=message,
+                context="connecta ceia",
+                k=1
+            ) 
+        else:
+            context_docs = []
+
+        print("context: ", context_docs)
 
         # Seleção de documentos caso tenha rag_tables
         filtered_docs = [
