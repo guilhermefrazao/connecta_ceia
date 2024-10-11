@@ -33,9 +33,9 @@ segment_connecta = RAGSegment(
 segment_bolsistas = RAGSegment(
     context="connecta ceia",
     text = "\n".join([line_to_str(line) for line in read_csv('../data/projetos_equipes_formatado.csv')]),
-    text_embedding="fale sobre bolsistas conecta ceia",
+    text_embedding="fale sobre bolsistas ceia",
     source_type="csv",
-    embedding=generate_embeddings("fale sobre bolsistas conecta ceia"),
+    embedding=generate_embeddings("fale sobre bolsistas ceia"),
     instructions="isso é um csv falando sobre bolsistas do ceia, considerando suas posições dentro dos projetos que estão sendo desenvolvidos e o valor que recebem para desenvolver esses projetos"
 )
 

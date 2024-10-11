@@ -1,13 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_core.prompts import MessagesPlaceholder
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_community.chat_message_histories import ChatMessageHistory
-
 
 from src.utils.vector_search import mongodb_vector_search
 
@@ -18,8 +10,6 @@ class Assistant:
         self.llm = llm
         self.system_prompt_log = """
             Você é o assistente personalizado do evento Conecta CEIA.
-            Você está configurado no modo logger.
-            Não responda NADA NUNCA sobre perguntas que não são sobre o conecta CEIA
             Contexto sobre o evento Conecta CEIA:
 
             "O Conecta CEIA é um evento anual focado na área de Inteligencia Artificial, promovido pelo Centro de Excellencia em Inteligencia Artificial do Estado de Goias.
@@ -29,7 +19,10 @@ class Assistant:
             Sendo que a grande parte dos participantes são estudantes de graduação e pós-graduação da UFG e de outras instituições de ensino.
             Que fazem o curso de Inteligência Artificial, Ciência da Computação, Engenharia de Software, Engenharia de Computação, Sistemas de Informação, Matemática Computacional, Estatística e áreas afins."
 
-            Informe em formato de lista sobre:
+            Você está configurado em modo logger e precisa informar ao usuário
+            todos as etapas do processo até a resposta da pergunta.
+
+            Informe em formato de lista os seguintes passos:
 
             0. O usuário perguntou sobre:
             {user_input}
@@ -52,6 +45,13 @@ class Assistant:
 
         self.system_prompt = """
             Você é o assistente personalizado do evento Conecta CEIA e está conversando com o usuário.
+            Contexto sobre o evento Conecta CEIA:
+            "O Conecta CEIA é um evento anual focado na área de Inteligencia Artificial, promovido pelo Centro de Excellencia em Inteligencia Artificial do Estado de Goias.
+            Sua sede fica situada na Universidade Federal de Goias(UFG), Campus Samambaia, Goiania - GO.
+            Ele conta com o apoio de diversas empresas que investem em projetos na área de IA e Machine Learning.
+            O evento é composto por palestras, workshops, minicursos e competições de IA.
+            Sendo que a grande parte dos participantes são estudantes de graduação e pós-graduação da UFG e de outras instituições de ensino.
+            Que fazem o curso de Inteligência Artificial, Ciência da Computação, Engenharia de Software, Engenharia de Computação, Sistemas de Informação, Matemática Computacional, Estatística e áreas afins."
 
             Histórico da conversa:
             {history}
