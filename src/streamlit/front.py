@@ -28,10 +28,11 @@ assistant = Assistant(llm=llm)
 
 st.header("Chatbot Conecta CEIA", divider="violet")
 
+col1, col2, col3 = st.columns(3)
 #
-rag_tables = st.toggle("Habilitar RAG Tabelas")
-rag_video = st.toggle("Habilitar RAG Video")
-log = st.toggle("Habilitar histórico")
+rag_tables = col1.toggle("Habilitar RAG Tabelas")
+log = col2.toggle("Habilitar Detalhes")
+enable_history = col3.toggle("Habilitar Histórico")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -50,10 +51,11 @@ if prompt := st.chat_input("Escreva uma mensagem"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     response = assistant.rag_chain(
-        message=prompt, history=st.session_state.messages,
+        message=prompt,
+        history=st.session_state.messages,
         rag_tables=rag_tables,
-        rag_video=rag_video,
-        log=log
+        log=log,
+        enable_history=enable_history
     )
     print("response_assistant",response)
     # Display assistant response in chat message container

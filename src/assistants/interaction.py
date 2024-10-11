@@ -15,7 +15,6 @@ import os
 
 class Assistant:
     def __init__(self, llm):
-        self.store = {}
         self.llm = llm
         self.system_prompt_log = """
             Você é o assistente personalizado do evento Conecta CEIA.
@@ -47,13 +46,12 @@ class Assistant:
             4. A resposta para a pergunta.
             
             **IMPORTANTE***
-            A resposta deve ser rica em detalhes sem erros de português.
+            Você precisa informar sobre o que o sistema encontrou explicando pro usuário cada etapa.
             Não responda NADA NUNCA sobre perguntas que não são sobre o conecta CEIA
         """
 
         self.system_prompt = """
             Você é o assistente personalizado do evento Conecta CEIA e está conversando com o usuário.
-            Não responda NADA NUNCA sobre perguntas que não são sobre o conecta CEIA
 
             Histórico da conversa:
             {history}
@@ -66,108 +64,40 @@ class Assistant:
             1. Se não souber responda que não sabe.
             2. Não fale sobre algo que não está no valor retornado.
             3. Não invente valores.
-            4. Não responda NADA NUNCA sobre perguntas que não são sobre o conecta CEIA
-
+            4. Utilize o histórico da conversa se houver.
         """
 
-        self.system_prompt_rag_log = (
-        """
-        Atue com a personalidade de um agente especialista em perguntas e respostas as bolsas (salários) dos funcionários da instituição CEIA.
-
-        Considere que você está inserido no evento Conecta CEIA e os usuários querem saber sobre os salários dos funcionários.
-        Responda de forma amigável.
-        {context}
-        """
-        )
-
-        self.contextualize_q_system_prompt = (
-        """
-        Atue com a personalidade de um agente especialista em perguntas e respostas as bolsas (salários) dos funcionários da instituição CEIA.
-        Dada a história do chat e a última pergunta do usuário, que pode referenciar o contexto na história do chat, reformule a pergunta de forma que possa ser entendida sem a necessidade da história do chat.
-        NÃO responda à pergunta, apenas reformule-a se necessário e, caso contrário, retorne-a como está.
-        """
-        )
-
-    def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
-        if session_id not in self.store:
-            self.store[session_id] = ChatMessageHistory()
-        return self.store[session_id]
-
-    def create_prompt(self, context_text, history):
+    def create_prompt(self, context_text, history_formated):
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", self.system_prompt),
                 ("human", "{user_input}"),
             ]
-        ).partial(context=context_text, history=history)
-        prompt_chain = (
-            prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        return prompt_chain
+        ).partial(context=context_text, history=history_formated)
+        return prompt
     
-    def create_log_prompt(self, context_text, history, source_type):
+    def create_log_prompt(self, context_text, history_formated, source_type):
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", self.system_prompt_log),
                 ("human", "{user_input}"),
             ]
-        ).partial(context=context_text, history=history, source_type=source_type)
-        prompt_chain = (
-            prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        return prompt_chain
-    
-    def rag_history_prompt(self,context_text, message):
-        contextualize_q_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self.contextualize_q_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-
-        qa_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self.system_prompt_rag_log),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-
-        
-        history_aware_retriever = create_history_aware_retriever(
-            self.llm, context_text, contextualize_q_prompt
-        )
-
-        question_answer_chain = create_stuff_documents_chain(self.llm, qa_prompt)
-        rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-
-        conversational_rag_chain = RunnableWithMessageHistory(
-        rag_chain,
-        get_session_history=self.get_session_history,
-        input_messages_key="input",
-        history_messages_key="chat_history",
-        output_messages_key="answer",
-        )
-
-        result = conversational_rag_chain.invoke(
-            {"input": message},
-            config={"configurable": {"session_id": "abc321"}},
-        )["answer"]
-
-        return result
+        ).partial(context=context_text, history=history_formated, source_type=source_type)
+        return prompt
 
     def format_history(self, history_list):
         return "\n".join(
-            "{}: {}".format(history['role'], history['content']) 
-            for history in history_list
+            "Mensagem {}: {} - {}.".format(i+1, history['content'], history['role']) 
+            for i, history in enumerate(history_list)
         )
     
-    def rag_chain(self, message, history='', rag_tables=False, rag_video=False, log=False, source_type='csv'):
+    def rag_chain(
+            self, message,  history={},
+            rag_tables=False, log=False,
+            source_type='csv', enable_history=False,
+    ):
+        
+        print(f"Historico:{enable_history}, Logs:{log}, RAG:{rag_tables}")
         
         vector_index = os.getenv("CONNECTA_VECTOR_INDEX_NAME")
 
@@ -187,37 +117,25 @@ class Assistant:
 
         # Seleção de documentos caso tenha rag_tables
         filtered_docs = [
-            doc for doc in context_docs if doc['score'] >= 0.55
+            doc for doc in context_docs if doc['score'] >= 0.50
         ] if rag_tables else []
 
         context_text = "\n".join([doc['text'] for doc in filtered_docs]) if rag_tables else ''
+        print(context_text)
 
+        history_formated = self.format_history(history) if enable_history else ''
+        print("HISTÓRICO", history_formated)
 
-        history_formated = self.format_history(history) if history else ''
+        prompt = self.create_prompt(context_text, history_formated) if not log \
+            else self.create_log_prompt(context_text, history_formated, 'csv')
 
-        # Seleção de prompt com base no modo log
+        print(str(prompt))
 
-        if log and rag_tables:
-            result = self.rag_history_prompt(context_text, message)
-            return result
-
-        elif log and rag_video:
-            #Falta o rag de vídeo 
-            prompt_chain = ""
-
-        elif rag_video:
-            #Falta o rag de vídeo 
-            prompt_chain = ""
-
-        elif log:
-           prompt_chain = self.create_log_prompt(context_text, history_formated, source_type)
-
-        elif rag_tables:
-            prompt_chain = self.create_prompt(context_text, history_formated)
-            
-        else:
-            prompt_chain = self.create_log_prompt(context_text, history_formated, source_type)
-
+        prompt_chain = (
+            prompt
+            | self.llm
+            | StrOutputParser()
+        )
 
         result = prompt_chain.invoke({"user_input": message})
 
